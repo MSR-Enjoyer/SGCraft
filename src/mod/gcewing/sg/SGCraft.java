@@ -22,15 +22,9 @@ import gcewing.sg.features.configurator.ConfiguratorItem;
 import gcewing.sg.features.configurator.network.ConfiguratorNetworkHandler;
 import gcewing.sg.features.gdo.GdoItem;
 import gcewing.sg.features.gdo.network.GdoNetworkHandler;
-import gcewing.sg.features.ic2.zpm.modulehub.ZpmHub;
-import gcewing.sg.features.ic2.zpm.modulehub.ZpmHubContainer;
-import gcewing.sg.features.ic2.zpm.modulehub.ZpmHubTE;
 import gcewing.sg.features.pdd.AddressNameRegistry;
 import gcewing.sg.features.zpm.ZPMItem;
 import gcewing.sg.features.zpm.ZPMMultiplierRegistry;
-import gcewing.sg.features.ic2.zpm.interfacecart.ZpmInterfaceCartContainer;
-import gcewing.sg.features.ic2.zpm.interfacecart.ZpmInterfaceCart;
-import gcewing.sg.features.ic2.zpm.interfacecart.ZpmInterfaceCartTE;
 import gcewing.sg.features.pdd.PddItem;
 import gcewing.sg.features.pdd.network.PddNetworkHandler;
 import gcewing.sg.features.tokra.SGTradeHandler;
@@ -112,7 +106,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 
 @Mod(modid = Info.modID, name = Info.modName, version = Info.versionNumber,
-    acceptableRemoteVersions = Info.versionBounds, dependencies = "after:opencomputers;after:ic2;after:computercraft;after:malisiscore")
+    acceptableRemoteVersions = Info.versionBounds, dependencies = "after:opencomputers;after:computercraft;after:malisiscore")
 
 public class SGCraft extends BaseMod<SGCraftClient> {
 
@@ -132,13 +126,10 @@ public class SGCraft extends BaseMod<SGCraftClient> {
     public static Item naquadah, naquadahIngot, sgCoreCrystal, sgControllerCrystal, sgChevronUpgrade, sgIrisUpgrade, sgIrisBlade, pegasus_upgrade;
     public static Item tollan_phase_shift_device;
 
-    public static Block ic2PowerUnit;
-    public static Item ic2Capacitor;
 
     public static boolean addOresToExistingWorlds;
     public static NaquadahOreWorldGen naquadahOreGenerator;
 
-    public static BaseSubsystem ic2Integration; //[IC2]
     public static IIntegration ccIntegration; //[CC]
     public static OCIntegration ocIntegration; //[OC]
 
@@ -155,12 +146,6 @@ public class SGCraft extends BaseMod<SGCraftClient> {
     public static boolean canHarvestSGBaseBlock = false;
     public static boolean canHarvestSGRingBlock = false;
 
-    // IC2 Options
-    public static int Ic2SafeInput = 2048;
-    public static int Ic2MaxEnergyBuffer = 1000000;
-    public static double Ic2euPerSGEnergyUnit = 20.0;
-    public static int Ic2PowerTETier = 5; //3
-
     // SG Power Block Options
     public static int FPMaxEnergyBuffer = 4000000;
     public static double FPPerSGEnergyUnit = 80.0;
@@ -176,7 +161,6 @@ public class SGCraft extends BaseMod<SGCraftClient> {
     // World data fixes
     public static boolean forceSGBaseTEUpdate = false;
     public static boolean forceDHDCfgUpdate = false;
-    public static boolean forceIC2CfgUpdate = false;
     public static boolean forceFPCfgUpdate = false;
     public static boolean forceZPMCfgUpdate = false;
     public static boolean forceGateAccessSystemReset = false;
@@ -208,14 +192,8 @@ public class SGCraft extends BaseMod<SGCraftClient> {
         if (FMLCommonHandler.instance().getSide().isClient()) {
             OBJLoader.INSTANCE.addDomain("sgcraft");
         }
-        ic2Integration = integrateWithMod("ic2", "gcewing.sg.features.ic2.IC2Integration"); //[IC2]
         ccIntegration = (IIntegration) integrateWithMod("computercraft", "gcewing.sg.features.cc.CCIntegration"); //[CC]
         ocIntegration = (OCIntegration)integrateWithMod("opencomputers", "gcewing.sg.features.oc.OCIntegration"); //[OC]
-
-        if (isModLoaded("ic2")) {
-            GameRegistry.registerTileEntity(ZpmInterfaceCartTE.class, new ResourceLocation(this.modID + ":" + "tile_zpminterfacecart"));
-            GameRegistry.registerTileEntity(ZpmHubTE.class, new ResourceLocation(this.modID + ":" + "tile_zpmmodulehub"));
-        }
 
         GameRegistry.registerTileEntity(ZpmConsoleTE.class, new ResourceLocation(this.modID + ":" + "tile_zpmconsole"));
 
@@ -298,10 +276,6 @@ public class SGCraft extends BaseMod<SGCraftClient> {
         naquadahOre = newBlock("naquadahOre", NaquadahOreBlock.class);
         sgPowerUnit = newBlock("sgPowerUnit", SGPowerBlock.class);
 
-        if (isModLoaded("ic2")) {
-            zpm_interface_cart = newBlock("zpm_interface_cart", ZpmInterfaceCart.class);
-            zpm_hub = newBlock("zpm_hub", ZpmHub.class);
-        }
         zpm_console = newBlock("zpm_console", ZpmConsole.class);
 
         this.setOptions();
@@ -316,9 +290,6 @@ public class SGCraft extends BaseMod<SGCraftClient> {
         sgChevronUpgrade = addItem(new SGChevronUpgradeItem(), "sgChevronUpgrade");
         sgIrisUpgrade = addItem(new SGIrisUpgradeItem(), "sgIrisUpgrade");
         sgIrisBlade = newItem("sgIrisBlade");
-        if (isModLoaded("ic2")) {
-            ic2Capacitor = newItem("ic2Capacitor");
-        }
 
         zpm = addItem(new ZPMItem(), "zpm");
         tollan_phase_shift_device = newItem("tollan_phase_shift_device");
@@ -484,16 +455,8 @@ public class SGCraft extends BaseMod<SGCraftClient> {
             newRecipe("zpmConsole", zpm_console, 1, "rgr", "xIz", "InI", 'n', Blocks.GOLD_BLOCK, 'z', sgCoreCrystal, 'x', sgControllerCrystal, 'r', Items.EMERALD, 'g', Blocks.GLASS_PANE, 'I', Blocks.IRON_BLOCK);
         }
 
-        if (!isModLoaded("ic2")) {
-            addGenericCapacitorRecipe();
-        }
     }
 
-    protected void addGenericCapacitorRecipe() {
-        if (config.getBoolean("recipes", "genericCapacitorItem", true)) {
-            newRecipe("ic2capacitor", ic2Capacitor, 1, "iii", "ppp", "iii", 'i', "ingotIron", 'p', "paper");
-        }
-    }
 
     @Override
     protected void registerContainers() {
@@ -618,12 +581,6 @@ public class SGCraft extends BaseMod<SGCraftClient> {
         canHarvestSGBaseBlock  = config.getBoolean("block-harvest", "sgBaseBlock", canHarvestSGBaseBlock);
         canHarvestSGRingBlock  = config.getBoolean("block-harvest", "sgRingBlock", canHarvestSGRingBlock);
 
-        // IC2
-        Ic2SafeInput  = config.getInteger("ic2", "safeInputRate", Ic2SafeInput);
-        Ic2MaxEnergyBuffer = config.getInteger("ic2", "energyBufferSize", Ic2MaxEnergyBuffer);
-        Ic2euPerSGEnergyUnit = config.getDouble("ic2", "euPerSGEnergyUnit", Ic2euPerSGEnergyUnit);
-        Ic2PowerTETier = config.getInteger("ic2", "PowerTETier", Ic2PowerTETier);
-        forceIC2CfgUpdate = config.getBoolean("ic2", "force-update", forceIC2CfgUpdate);
 
         // FP Power Block (Forge Power) i.e.: RF/FE
         FPMaxEnergyBuffer = config.getInteger("fp-power", "energyBufferSize", FPMaxEnergyBuffer);
