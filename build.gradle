@@ -4,7 +4,7 @@ buildscript {
         mavenLocal()
         jcenter()
         maven {
-            url = "https://maven.minecraftforge.net"
+            url = "https://cursemaven.com"
         }
         maven {
             url = "https://oss.sonatype.org/content/repositories/snapshots/"
